@@ -12,12 +12,12 @@ body {
   /* Set Legend Style */
   .info {
     padding: 1px 10px;
-    background: #fefffe;
+    background: #feffff83;
     border-radius: 5px;
   }
   
   .legend {
-    line-height: 25px;
+    line-height: 35px;
     color: #000000;
   }
   

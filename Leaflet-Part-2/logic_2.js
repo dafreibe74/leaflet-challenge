@@ -1,16 +1,16 @@
-// Store our API endpoint as queryUrl and tectonicplatesUrl
+// create variables for API endpoints
 let queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
-let tectonicplatesUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
+let tecUrl = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_boundaries.json"
 
-// Perform a GET request to the query URL
+// use d3 to query data
 d3.json(queryUrl).then(function (data) {
-  // Console log the data retrieved 
+  // log the data
   console.log(data);
-  // Once we get a response, send the data.features object to the createFeatures function.
+  // send as data.features object to the createFeatures function
   createFeatures(data.features);
 });
 
-// Function to determine marker color by depth
+// create function to vary marker by depth
 function chooseColor(depth){
   if (depth < 10) return "#00FF00";
   else if (depth < 30) return "greenyellow";
@@ -22,21 +22,21 @@ function chooseColor(depth){
 
 function createFeatures(earthquakeData) {
 
-  // Define a function that we want to run once for each feature in the features array.
-  // Give each feature a popup that describes the place and time of the earthquake.
+  // create function for each feature in the features array
+  // create popup that provides earthquake details
   function onEachFeature(feature, layer) {
     layer.bindPopup(`<h3>Location: ${feature.properties.place}</h3><hr><p>Date: ${new Date(feature.properties.time)}</p><p>Magnitude: ${feature.properties.mag}</p><p>Depth: ${feature.geometry.coordinates[2]}</p>`);
   }
 
-  // Create a GeoJSON layer that contains the features array on the earthquakeData object.
-  // Run the onEachFeature function once for each piece of data in the array.
+  // create GeoJSON layer for features array
+  // create function for array
   let earthquakes = L.geoJSON(earthquakeData, {
     onEachFeature: onEachFeature,
 
-    // Point to layer used to alter markers
+    // tie layer to change markers
     pointToLayer: function(feature, latlng) {
 
-      // Determine the style of markers based on properties
+      // adapt markers to data
       let markers = {
         radius: feature.properties.mag * 20000,
         fillColor: chooseColor(feature.geometry.coordinates[2]),
@@ -48,13 +48,13 @@ function createFeatures(earthquakeData) {
     }
   });
 
-  // Send our earthquakes layer to the createMap function/
+  // tie earthquakes layer to map
   createMap(earthquakes);
 }
 
 function createMap(earthquakes) {
 
-  // Create tile layers
+  // create tiles
   let satellite = L.tileLayer('https://api.mapbox.com/styles/v1/{style}/tiles/{z}/{x}/{y}?access_token={access_token}', {
     attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
     style:    'mapbox/satellite-v9',
@@ -67,49 +67,49 @@ function createMap(earthquakes) {
     access_token: api_key
   });
 
-  let outdoors = L.tileLayer('https://api.mapbox.com/styles/v1/{style}/tiles/{z}/{x}/{y}?access_token={access_token}', {
+  let streetmap = L.tileLayer('https://api.mapbox.com/styles/v1/{style}/tiles/{z}/{x}/{y}?access_token={access_token}', {
     attribution: "© <a href='https://www.mapbox.com/about/maps/'>Mapbox</a> © <a href='http://www.openstreetmap.org/copyright'>OpenStreetMap</a> <strong><a href='https://www.mapbox.com/map-feedback/' target='_blank'>Improve this map</a></strong>",
     style:    'mapbox/outdoors-v12',
     access_token: api_key
   });
 
-  // Create layer for tectonic plates
-  tectonicPlates = new L.layerGroup();
+  // create tectonic plate layer
+  t_plates = new L.layerGroup();
 
-    // Perform a GET request to the tectonicplatesURL
-    d3.json(tectonicplatesUrl).then(function (plates) {
+    // use d3 to query plate data
+    d3.json(tecUrl).then(function (plates) {
 
-        // Console log the data retrieved 
+        // log the data
         console.log(plates);
         L.geoJSON(plates, {
             color: "orange",
             weight: 2
-        }).addTo(tectonicPlates);
+        }).addTo(t_plates);
     });
 
-    // Create a baseMaps object.
+    // create a variable for basemap
     let baseMaps = {
         "Satellite": satellite,
         "Grayscale": grayscale,
-        "Outdoors": outdoors
+        "Street Map": streetmap
     };
 
-    // Create an overlay object to hold our overlay.
+    // create variable for overlay
     let overlayMaps = {
         "Earthquakes": earthquakes,
-        "Tectonic Plates": tectonicPlates
+        "Tectonic Plates": t_plates
     };
     
-    // Create our map, giving it the satellite map and earthquakes layers to display on load.
+    // load map, satellite, earthquakes and tectonic plates
   let myMap = L.map("map", {
     center: [
       37.09, -95.71
     ],
     zoom: 5,
-    layers: [satellite, earthquakes, tectonicPlates]
+    layers: [satellite, earthquakes, t_plates]
   });
 
-  // Add legend
+  // add a legend
   let legend = L.control({position: "bottomright"});
   legend.onAdd = function() {
     let div = L.DomUtil.create("div", "info legend"),
@@ -125,9 +125,7 @@ function createMap(earthquakes) {
   };
   legend.addTo(myMap)
 
-  // Create a layer control.
-  // Pass it our baseMaps and overlayMaps.
-  // Add the layer control to the map.
+  // allow layer toggle and apply to map
   L.control.layers(baseMaps, overlayMaps, {
     collapsed: false
   }).addTo(myMap);
